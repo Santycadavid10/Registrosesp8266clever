@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Usuario</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    .container {
+        max-width: 400px;
+        margin: 50px auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+    #contiene{
+        display: none;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    .form-group input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+    }
+    .form-group button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+
+    #botonRegistro{
+        display: none;
+        width: 150px;
+         height: 150px;
+        border-radius: 50%; /* Hace que el botón sea redondo */
+        background-color: #4CAF50; /* Color de fondo del botón */
+        color: white; /* Color del texto del botón */
+        font-size: 16px; /* Tamaño del texto del botón */
+        border: none; /* Elimina el borde del botón */
+        cursor: pointer; /* Cambia el cursor al pasar sobre el botón */
+        position: absolute;
+        top: 50%;
+        left: 50%;
+         transform: translate(-50%, -50%); /* Centra el botón horizontal y verticalmente */
+
+    }
+</style>
+</head>
+<body>
+    <button id="botonRegistro"></button>
+
+
+
+    <div class="container" id="contiene">
+        <h2>Registro de Usuario</h2>
+        <div class="form-group">
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" placeholder="Ingrese su nombre">
+        </div>
+        <div class="form-group">
+            <label for="documento">Documento:</label>
+            <input type="text" id="documento" placeholder="Ingrese su documento">
+        </div>
+        <div class="form-group">
+            <button onclick="guardarUsuario()">Registrar</button>
+        </div>
+    </div>
+
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function() 
+{   
+    if (localStorage.getItem("Usuario") !== null) 
+    {
+        document.getElementById("botonRegistro").style.display = "block";
+        var botonRegistro = document.getElementById("botonRegistro");
+        // Si ya se ha guardado la entrada, cambiar el texto del botón a "Registrar salida"
+        if (localStorage.getItem("entrada") !== null)
+         {
+            botonRegistro.textContent = "Registrar Salida";
+        }
+        else
+        {
+            botonRegistro.textContent = "Registrar Entrada";
+        }
+        
+   }
+
+    else
+    {
+        document.getElementById("contiene").style.display = "block";
+    }
+});
+
+function guardarUsuario() 
+    {
+        var nombre = document.getElementById("nombre").value;
+        var documento = document.getElementById("documento").value;
+
+
+        var registro = {
+            nombre: nombre,
+            documento: documento
+        };
+
+        // Guardar el registro en localStorage
+        localStorage.setItem("Usuario", JSON.stringify(registro));
+
+        alert("Registro exitoso. ¡Gracias por registrarte!");
+        location.reload();
+        }
+
+        // Agregar un evento de clic al botón
+        botonRegistro.addEventListener("click", function()
+         {
+
+            if(localStorage.getItem("entrada") !== null){
+                var UsuarioAlmacenado = localStorage.getItem("Usuario");
+                // Parsear el registro almacenado de JSON a objeto JavaScript
+                var registro = JSON.parse(UsuarioAlmacenado);
+                // Recuperar el documento del registro
+                var documentoRecuperado = registro.documento;
+       
+                var horaRecuperada = localStorage.getItem("entrada");
+                console.log(horaRecuperada)
+                var fechaSalida = new Date();
+                // Extraer el año, mes y día de la fecha actual
+                var año = fechaSalida.getFullYear();
+                var mes = fechaSalida.getMonth() + 1; // Nota: Los meses en JavaScript son indexados desde 0, por lo que se suma 1
+                var dia = fechaSalida.getDate();
+                // Extraer la hora, minutos y segundos de la fecha actual
+                var hora = fechaSalida.getHours();
+                var minutos = fechaSalida.getMinutes();
+                var segundos = fechaSalida.getSeconds();
+
+                // Formatear la hora para mostrarla en el formato HH:MM:SS
+                var horaSalida = año + '-' + (mes < 10 ? '0' : '') + mes + '-' + (dia < 10 ? '0' : '') + dia + ' ' +
+                                (hora < 10 ? '0' : '') + hora + ':' + (minutos < 10 ? '0' : '') + minutos + ':' +
+                                (segundos < 10 ? '0' : '') + segundos;               
+
+                var datos = "documento=" + encodeURIComponent(documentoRecuperado) +
+                            "&horaEntrada=" + encodeURIComponent(horaRecuperada) +
+                            "&horaSalida=" + encodeURIComponent(horaSalida);
+
+            // Realizar la solicitud HTTP POST al ESP8266
+            fetch("http://192.168.20.199/guardar-datos", {
+                                                            method: "POST",
+                                                            headers: {
+                                                            "Content-Type": "application/x-www-form-urlencoded"
+                                                             },
+                                                             body: datos
+                                                            })
+            .then(response => {
+                                localStorage.removeItem("entrada");
+                                var registroGuardado = localStorage.getItem("Usuario");
+                                var registro = JSON.parse(registroGuardado);
+                                var nombre = registro.nombre;
+                                alert("Gracias "+ nombre + " Se ha registrado el fin del turno.");
+                                botonRegistro.textContent = "Registrar Entrada";
+                                })
+            .catch(error => {
+                                console.error("Error:", error);
+                            });
+            
+                
+            }
+            else 
+            {
+                // Obtener la hora actual
+                var fechaEntrada = new Date();
+                var año = fechaEntrada.getFullYear();
+                var mes = fechaEntrada.getMonth() + 1; // Nota: Los meses en JavaScript son indexados desde 0, por lo que se suma 1
+                var dia = fechaEntrada.getDate();
+
+                // Extraer la hora, minutos y segundos de la fecha actual
+                var hora = fechaEntrada.getHours();
+                var minutos = fechaEntrada.getMinutes();
+                var segundos = fechaEntrada.getSeconds();
+
+                // Formatear la hora para mostrarla en el formato HH:MM:SS
+                var horaEntrada = año + '-' + (mes < 10 ? '0' : '') + mes + '-' + (dia < 10 ? '0' : '') + dia + ' ' +
+                           (hora < 10 ? '0' : '') + hora + ':' + (minutos < 10 ? '0' : '') + minutos + ':' +
+                           (segundos < 10 ? '0' : '') + segundos;
+                localStorage.setItem("entrada", horaEntrada);
+                var registroGuardado = localStorage.getItem("Usuario");
+                var registro = JSON.parse(registroGuardado);
+                var nombre = registro.nombre;
+                alert("Bienvenido " + nombre + " Se ha registrado tu Entrada."); 
+                botonRegistro.textContent = "Registrar Salida";
+            }
+        });
+
+        
+
+
+</script>
+
+</body>
+</html>
